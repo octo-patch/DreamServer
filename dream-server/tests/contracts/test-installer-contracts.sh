@@ -336,6 +336,18 @@ grep -q '<string>${OPENCODE_BIN}</string>' installers/macos/install-macos.sh \
 grep -q '_compute_launchd_path "$(dirname "$OPENCODE_BIN")"' installers/macos/install-macos.sh \
   || { echo "[FAIL] macOS OpenCode LaunchAgent PATH must include resolved binary directory"; exit 1; }
 
+echo "[contract] macOS local rebuilds respect selected compose services"
+grep -q 'config --services' installers/macos/install-macos.sh \
+  || { echo "[FAIL] macOS installer must inspect selected compose services before local rebuilds"; exit 1; }
+grep -q 'Could not resolve macOS compose services for local image rebuilds' installers/macos/install-macos.sh \
+  || { echo "[FAIL] macOS installer must fail clearly if compose service resolution fails"; exit 1; }
+grep -q 'Skipping local image rebuild for disabled service' installers/macos/install-macos.sh \
+  || { echo "[FAIL] macOS installer must skip disabled local-build services"; exit 1; }
+if grep -q '_macos_build_services=(dashboard dashboard-api ape token-spy privacy-shield)' installers/macos/install-macos.sh; then
+  echo "[FAIL] macOS installer must not rebuild every local service unconditionally"
+  exit 1
+fi
+
 echo "[contract] Hermes context defaults are installer-wide"
 bash tests/test-installer-context-parity.sh
 
